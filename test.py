@@ -7,37 +7,36 @@ Created on Fri Jun 24 18:23:42 2022
 
 from deepface import DeepFace
 
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QToolTip, QDesktopWidget, QVBoxLayout, QHBoxLayout, QLabel, QFileDialog, QProgressBar
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QToolTip, QDesktopWidget, QVBoxLayout, QHBoxLayout, QLabel, QFileDialog, QProgressBar, QMainWindow, QMessageBox
 from PyQt5.QtGui import QFont, QIcon, QPixmap
 from PyQt5.QtCore import QCoreApplication, QBasicTimer, Qt
+from PyQt5 import uic
 
-import urllib.request
-
-# from camera import Camera
+form_class = uic.loadUiType("ui_test.ui")[0]
 
 import sys
 import os
 
-from tkinter import filedialog
-from tkinter import messagebox
+class MyApp(QMainWindow, form_class):
+    pixmap1_path = ""
+    pixmap2_path = ""
 
-from tkinter import *
-from PIL import ImageTk, Image
-from tkinter import filedialog
-
-
-class MyApp(QWidget):
     def __init__(self):
-        super().__init__()
+        QMainWindow.__init__(self)
+        # 연결한 Ui를 준비한다.
+        self.setupUi(self)
         self.initUI()
+        # 화면을 보여준다.
+        self.show()
 
     def initUI(self):
         QToolTip.setFont(QFont('SansSerif', 10))
         self.setToolTip('This is a <b>Face unlock</b> widget')
-
         self.setWindowTitle('Face Project!!')
         self.setWindowIcon(QIcon('deepface-icon.png'))
-        self.resize(700, 500)
+
+        self.push_compare.clicked.connect(self.compare_btn_clicked)
+
         self.setIMG()
         self.center()
         self.show()
@@ -48,69 +47,67 @@ class MyApp(QWidget):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
+    def ref_FileLoad(self):
+        img1_fname = QFileDialog.getOpenFileName(self)
+        print(img1_fname[0])
+        self.pixmap1_path = img1_fname[0]
+        pixmap1 = QPixmap(img1_fname[0])
+        pixmap1 = pixmap1.scaledToHeight(261)
+        # self.lbl_size1 = QLabel('img1 Width: ' + str(pixmap1.width()) + ', Height: ' + str(pixmap1.height()))
+        self.img_ref.setPixmap(pixmap1)
+        # self.lbl_size1.setAlignment(Qt.AlignCenter)
+        print(img1_fname[1])
+
+    def cmp_FileLoad(self):
+        img2_fname = QFileDialog.getOpenFileName(self)
+        print(img2_fname[0])
+        self.pixmap2_path = img2_fname[0]
+        pixmap2 = QPixmap(img2_fname[0])
+        pixmap2 = pixmap2.scaledToHeight(261)
+        # self.lbl_size2 = QLabel('img2 Width: ' + str(pixmap2.width()) + ', Height: ' + str(pixmap2.height()))
+        self.img_cmp.setPixmap(pixmap2)
+        # self.lbl_size2.setAlignment(Qt.AlignCenter)
+        print(img2_fname[0])
+
+    def compare_btn_clicked(self):
+        if(self.pixmap1_path != "" and self.pixmap2_path != ""):
+            result = DeepFace.verify(img1_path=self.pixmap1_path, img2_path=self.pixmap2_path)
+            print(result)
+            verified = result['verified']
+            print(verified)
+            self.match_rate.setText("일치율 : " + str(verified))
+
+        else:
+            QMessageBox.about(self, 'Warnnig!!', '이미지를 선택하시오')
+
+    def closeEvent(self, event):
+        reply = QMessageBox.question(self, 'Message', 'Are you sure to quit?',
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            event.accept()
+        else:
+            event.ignore()
+
     def setIMG(self):
-        quitbtn = QPushButton('Quit', self)
-        quitbtn.setToolTip('<b>exit</b>')
-        quitbtn.move(320, 5)
-        quitbtn.resize(quitbtn.sizeHint())
-        quitbtn.clicked.connect(QCoreApplication.instance().quit)
+        self.push_ref.clicked.connect(self.ref_FileLoad)
+        self.push_cmp.clicked.connect(self.cmp_FileLoad)
 
-        select_img1 = QPushButton('원본 이미지 선택', self)
-        # select_img1.setFont()
-        # select_img1.move(30, 5)
-        select_img1.resize(select_img1.sizeHint())
-        # select_img1.clicked.connect(self.setIMG())
-
-        select_img2 = QPushButton('비교할 이미지 선택', self)
-        # select_img2.setFont()
-        # select_img2.move(170, 5)
-        select_img2.resize(select_img1.sizeHint())
-        # select_img2.clicked.connect(self)
-
-        pixmap1 = QPixmap('C:\\code\\python\\face\\img1.jpg')
-        lbl_img1 = QLabel()
-        # pixmap1 = pixmap1.scaledToWidth(80)
-        pixmap1 = pixmap1.scaledToHeight(360)
-        lbl_img1.setPixmap(pixmap1)
-
-        pixmap2 = QPixmap('C:\\code\\python\\face\\img2.jpg')
-        lbl_img2 = QLabel()
-        # pixmap2 = pixmap2.scaledToWidth(80)
-        pixmap2 = pixmap2.scaledToHeight(360)
-        lbl_img2.setPixmap(pixmap2)
-
+        pixmap1 = QPixmap('C:\\code\\python\\face_unlock_project\\deepface-icon.png')
+        pixmap1 = pixmap1.scaledToHeight(261)
         lbl_size = QLabel('img1 Width: ' + str(pixmap1.width()) + ', Height: ' + str(pixmap1.height()))
-        lbl_size2 = QLabel('img2 Width: ' + str(pixmap2.width()) + ', Height: ' + str(pixmap2.height()))
+        self.img_ref.setPixmap(pixmap1)
         lbl_size.setAlignment(Qt.AlignCenter)
+
+        pixmap2 = QPixmap('C:\\code\\python\\face_unlock_project\\deepface-icon.png')
+        pixmap2 = pixmap2.scaledToHeight(261)
+        lbl_size2 = QLabel('img2 Width: ' + str(pixmap2.width()) + ', Height: ' + str(pixmap2.height()))
+        self.img_cmp.setPixmap(pixmap2)
         lbl_size2.setAlignment(Qt.AlignCenter)
 
-        pbar = QProgressBar(self)
-        timer = QBasicTimer()
-        timer.start(100, self)
 
-        buttonbox = QHBoxLayout()
-        buttonbox.addWidget(select_img1)
-        buttonbox.addStretch(1)
-        buttonbox.addWidget(select_img2)
-        buttonbox.addStretch(2)
-        buttonbox.addWidget(quitbtn)
-        # buttonbox.addStretch(1)
-
-        hbox = QHBoxLayout()
-        hbox.addStretch(1)
-        hbox.addWidget(lbl_img1)
-        hbox.addWidget(lbl_img2)
-        hbox.addStretch(1)
-
-        vbox = QVBoxLayout()
-        vbox.addLayout(buttonbox)
-        vbox.addLayout(hbox)
-        vbox.addWidget(lbl_size)
-        vbox.addWidget(lbl_size2)
-
-        self.setLayout(vbox)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    ex = MyApp()
-    sys.exit(app.exec_())
+    window = MyApp()
+    app.exec_()
